@@ -18,6 +18,8 @@
 #include "uart.h"
 #include "lcd.h"
 
+#define LED	PB5
+
 #define LINELEN 16
 
 void wrap_out(char *s);
@@ -33,13 +35,31 @@ main(void)
 	lcd_init();
 	uart_init();
 
+	DDRB |= (1<<LED);
+
+	/* setup timer used to blink notification LED (clk/256 prescaler) */
+	TCCR1B |= (1<<WGM12);		/* CTC mode */
+	TIMSK1 |= (1<<OCIE1A);		/* enable output compare A interrupt */
+	OCR1A = (F_CPU / 256 / 3) - 1;	/* one third second output compare A */
+
 	sei();
 
 	for (;;) {
-		if (uart_receive_done != 0)
+		if (uart_receive_done != 0) {
 			uart_gets(input, UART_BUFFLEN);
+			TCCR1B |= (1<<CS12);	/* start LED timer */
+		}
 
 		wrap_out(input);
+
+		/*
+		 * If LED timer is running, stop it and make sure that the LED
+		 * is turned off.
+		 */
+		if (TCCR1B & (1<<CS12)) {
+			TCCR1B &= ~(1<<CS12);
+			PORTB &= ~(1<<LED);
+		}
 	}
 
 	return (0);
@@ -91,4 +111,9 @@ wrap_out(char *s)
 	lcd_select_line(2);
 	lcd_puts(line2);
 	_delay_ms(1000);
+}
+
+ISR(TIMER1_COMPA_vect)
+{
+	PORTB ^= (1<<LED);
 }
