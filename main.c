@@ -7,7 +7,7 @@
  */
 
 /*
- * Portable Pingie Pie
+ * Pingie Pie Portable
  */
 
 #include <string.h>
