@@ -45,6 +45,12 @@ main(void)
 	TIMSK1 |= (1<<OCIE1A);		/* enable output compare A interrupt */
 	OCR1A = (F_CPU / 256 / 2) - 1;	/* half second output compare A */
 
+	lcd_puts("*** Ready ***");
+	PORTD |= (1<<BACKLIGHT);
+	_delay_ms(1000);
+	PORTD &= ~(1<<BACKLIGHT);
+	lcd_clr();
+
 	sei();
 
 	uint8_t backlight = 0;
