@@ -18,9 +18,11 @@
 #include "uart.h"
 #include "lcd.h"
 
-#define LED	PB5
+#define LED		PB5
+#define BACKLIGHT	PD4
 
-#define LINELEN 16
+#define LINELEN		16
+#define BACKLIGHT_TIMES	2
 
 void wrap_out(char *s);
 
@@ -36,6 +38,7 @@ main(void)
 	uart_init();
 
 	DDRB |= (1<<LED);
+	DDRD |= (1<<BACKLIGHT);
 
 	/* setup timer used to blink notification LED (clk/256 prescaler) */
 	TCCR1B |= (1<<WGM12);		/* CTC mode */
@@ -44,10 +47,13 @@ main(void)
 
 	sei();
 
+	uint8_t backlight = 0;
 	for (;;) {
 		if (uart_receive_done != 0) {
 			uart_gets(input, UART_BUFFLEN);
 			TCCR1B |= (1<<CS12);	/* start LED timer */
+			PORTD |= (1<<BACKLIGHT);
+			backlight = BACKLIGHT_TIMES;
 		}
 
 		wrap_out(input);
@@ -60,6 +66,9 @@ main(void)
 			TCCR1B &= ~(1<<CS12);
 			PORTB &= ~(1<<LED);
 		}
+
+		if (--backlight == 0)
+			PORTD &= ~(1<<BACKLIGHT);
 	}
 
 	return (0);
