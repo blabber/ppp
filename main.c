@@ -40,7 +40,7 @@ main(void)
 	/* setup timer used to blink notification LED (clk/256 prescaler) */
 	TCCR1B |= (1<<WGM12);		/* CTC mode */
 	TIMSK1 |= (1<<OCIE1A);		/* enable output compare A interrupt */
-	OCR1A = (F_CPU / 256 / 3) - 1;	/* one third second output compare A */
+	OCR1A = (F_CPU / 256 / 2) - 1;	/* half second output compare A */
 
 	sei();
 
