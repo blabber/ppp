@@ -19,6 +19,7 @@
 #include "lcd.h"
 
 #define LED		PB5
+#define BUTTON		PD2
 #define BACKLIGHT	PD4
 
 #define LINELEN		16
@@ -44,6 +45,16 @@ main(void)
 	TCCR1B |= (1<<WGM12);		/* CTC mode */
 	TIMSK1 |= (1<<OCIE1A);		/* enable output compare A interrupt */
 	OCR1A = (F_CPU / 256 / 2) - 1;	/* half second output compare A */
+
+
+	/*
+	 * Setup  external interrupt and prepare TIMER0 as debounce timer. The
+	 * debounce timer will use a (clk/1024) prescaler and use the overflow
+	 * interrupt, yielding a debounce time of approximately 16 ms.
+	 */
+	EICRA |= (1<<ISC01) | (1<<ISC00);	/* INT0 on rising edge */
+	EIMSK |= (1<<INT0);
+	TIMSK0 |= (1<<TOIE0);
 
 	lcd_puts("*** Ready ***");
 	PORTD |= (1<<BACKLIGHT);
@@ -131,4 +142,36 @@ wrap_out(char *s)
 ISR(TIMER1_COMPA_vect)
 {
 	PORTB ^= (1<<LED);
+}
+
+ISR(TIMER0_OVF_vect)
+{
+	if (PIND & (1<<BUTTON)) {
+		PORTB ^= (1<<LED);
+	}
+
+	/*
+	 * Stop debounce timer, reset timer counter and clear overflow interrupt
+	 * flag.
+	 */
+	TCCR0B &= ~((1<<CS02) | (1<<CS00));
+	TCNT0 = 0;
+	TIFR0 |= (1<<TOV0);
+
+	/*
+	 * Clear external interrupt INT0 flag and reenable external interrupt
+	 * INT0.
+	 */
+	EIFR |= (1<<INTF0);
+	EIMSK |= (1<<INT0);
+}
+
+ISR(INT0_vect)
+{
+	/*
+	 * Disable external interrupt INT0 and enable debounce timer (clk/1024)
+	 * prescaler.
+	 */
+	EIMSK &= ~(1<<INT0);
+	TCCR0B |= (1<<CS02) | (1<<CS00);
 }
