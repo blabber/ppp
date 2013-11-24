@@ -22,6 +22,8 @@
 #define BUTTON		PD2
 #define BACKLIGHT	PD4
 
+#define PERM_BACKLIGHT	(1<<0)
+
 #define LINELEN		16
 #define BACKLIGHT_TIMES	2
 
@@ -31,6 +33,8 @@ char line1[LINELEN + 1] = {0};
 char line2[LINELEN + 1] = {0};
 
 char input[UART_BUFFLEN];
+
+volatile int8_t status = 0;
 
 int
 main(void)
@@ -69,8 +73,10 @@ main(void)
 		if (uart_receive_done != 0) {
 			uart_gets(input, UART_BUFFLEN);
 			TCCR1B |= (1<<CS12);	/* start LED timer */
-			PORTD |= (1<<BACKLIGHT);
-			backlight = BACKLIGHT_TIMES;
+			if (!(status & PERM_BACKLIGHT)) {
+				PORTD |= (1<<BACKLIGHT);
+				backlight = BACKLIGHT_TIMES;
+			}
 		}
 
 		wrap_out(input);
@@ -84,7 +90,7 @@ main(void)
 			PORTB &= ~(1<<LED);
 		}
 
-		if (--backlight == 0)
+		if ((!(status & PERM_BACKLIGHT)) && (--backlight == 0))
 			PORTD &= ~(1<<BACKLIGHT);
 	}
 
@@ -147,7 +153,12 @@ ISR(TIMER1_COMPA_vect)
 ISR(TIMER0_OVF_vect)
 {
 	if (PIND & (1<<BUTTON)) {
-		PORTB ^= (1<<LED);
+		status ^= PERM_BACKLIGHT;
+
+		if (status & PERM_BACKLIGHT)
+			PORTD |= (1<<BACKLIGHT);
+		else
+			PORTD &= ~(1<<BACKLIGHT);
 	}
 
 	/*
