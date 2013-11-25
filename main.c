@@ -44,6 +44,7 @@ main(void)
 
 	DDRB |= (1<<LED);
 	DDRB |= (1<<BACKLIGHT);
+	PORTD |= (1<<BUTTON);
 
 	/* setup timer used to blink notification LED (clk/256 prescaler) */
 	TCCR1B |= (1<<WGM12);		/* CTC mode */
@@ -55,7 +56,7 @@ main(void)
 	 * debounce timer will use a (clk/1024) prescaler and use the overflow
 	 * interrupt, yielding a debounce time of approximately 16 ms.
 	 */
-	EICRA |= (1<<ISC01) | (1<<ISC00);	/* INT0 on rising edge */
+	EICRA |= (1<<ISC01);	/* INT0 on falling edge */
 	EIMSK |= (1<<INT0);
 	TIMSK0 |= (1<<TOIE0);
 
@@ -151,7 +152,7 @@ ISR(TIMER1_COMPA_vect)
 
 ISR(TIMER0_OVF_vect)
 {
-	if (PIND & (1<<BUTTON)) {
+	if (!(PIND & (1<<BUTTON))) {
 		status ^= PERM_BACKLIGHT;
 
 		if (status & PERM_BACKLIGHT)
