@@ -20,7 +20,7 @@
 
 #define LED		PB5
 #define BUTTON		PD2
-#define BACKLIGHT	PD4
+#define BACKLIGHT	PB4
 
 #define PERM_BACKLIGHT	(1<<0)
 
@@ -43,13 +43,12 @@ main(void)
 	uart_init();
 
 	DDRB |= (1<<LED);
-	DDRD |= (1<<BACKLIGHT);
+	DDRB |= (1<<BACKLIGHT);
 
 	/* setup timer used to blink notification LED (clk/256 prescaler) */
 	TCCR1B |= (1<<WGM12);		/* CTC mode */
 	TIMSK1 |= (1<<OCIE1A);		/* enable output compare A interrupt */
 	OCR1A = (F_CPU / 256 / 2) - 1;	/* half second output compare A */
-
 
 	/*
 	 * Setup  external interrupt and prepare TIMER0 as debounce timer. The
@@ -61,9 +60,9 @@ main(void)
 	TIMSK0 |= (1<<TOIE0);
 
 	lcd_puts("*** Ready ***");
-	PORTD |= (1<<BACKLIGHT);
+	PORTB |= (1<<BACKLIGHT);
 	_delay_ms(1000);
-	PORTD &= ~(1<<BACKLIGHT);
+	PORTB &= ~(1<<BACKLIGHT);
 	lcd_clr();
 
 	sei();
@@ -74,7 +73,7 @@ main(void)
 			uart_gets(input, UART_BUFFLEN);
 			TCCR1B |= (1<<CS12);	/* start LED timer */
 			if (!(status & PERM_BACKLIGHT)) {
-				PORTD |= (1<<BACKLIGHT);
+				PORTB |= (1<<BACKLIGHT);
 				backlight = BACKLIGHT_TIMES;
 			}
 		}
@@ -91,7 +90,7 @@ main(void)
 		}
 
 		if ((!(status & PERM_BACKLIGHT)) && (--backlight == 0))
-			PORTD &= ~(1<<BACKLIGHT);
+			PORTB &= ~(1<<BACKLIGHT);
 	}
 
 	return (0);
@@ -156,9 +155,9 @@ ISR(TIMER0_OVF_vect)
 		status ^= PERM_BACKLIGHT;
 
 		if (status & PERM_BACKLIGHT)
-			PORTD |= (1<<BACKLIGHT);
+			PORTB |= (1<<BACKLIGHT);
 		else
-			PORTD &= ~(1<<BACKLIGHT);
+			PORTB &= ~(1<<BACKLIGHT);
 	}
 
 	/*
