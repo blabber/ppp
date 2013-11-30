@@ -61,7 +61,7 @@ ISR(USART_RX_vect)
 	uart_receive_done = 0;
 	*inp = UDR0;
 
-	if (*inp == '\r' || ++inp == (in + UART_BUFFLEN -1)) {
+	if (*inp == '\r' || *inp == '\n' || ++inp == (in + UART_BUFFLEN -1)) {
 		*inp = '\0';
 		inp = in;
 		uart_receive_done = 1;
